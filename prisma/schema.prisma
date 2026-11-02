@@ -1,0 +1,29 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model WakeLog {
+  id          String    @id @default(uuid())
+  requestedAt DateTime  @default(now())
+  status      String    @default("PENDING") // PENDING, CONSUMED
+  consumedAt  DateTime?
+  ip          String?
+  userAgent   String?
+
+  @@index([requestedAt])
+  @@index([status])
+}
+
+model RouterHeartbeat {
+  id         Int      @id @default(1)
+  lastSeen   DateTime @default(now())
+  ip         String?
+  totalPolls BigInt   @default(0)
+  updatedAt  DateTime @updatedAt
+}
+
