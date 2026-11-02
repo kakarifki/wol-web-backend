@@ -15,35 +15,55 @@ const WEB_PASSWORD = process.env.WEB_PASSWORD || process.env.WEB_PIN || 'Kompute
 
 // CORS configuration for frontend
 app.use('*', async (c, next) => {
-  const allowedOrigins = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
+  const rawOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',')
     : [
+        'https://wol-app.kakarifki.web.id',
         'https://wakeonlan.kakarifki.web.id',
         'http://localhost:5173',
         'http://localhost:3000',
         'http://127.0.0.1:5173',
       ];
 
+  // Strip trailing slashes and spaces from allowed origins
+  const allowedOrigins = rawOrigins
+    .map((o) => o.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
+
   const corsMiddleware = cors({
     origin: (origin) => {
       if (!origin) return '*';
-      if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-        return origin;
-      }
-      if (origin.endsWith('.kakarifki.web.id')) {
+      const cleanOrigin = origin.replace(/\/+$/, '');
+      if (
+        allowedOrigins.includes(cleanOrigin) ||
+        allowedOrigins.includes('*') ||
+        cleanOrigin.endsWith('.kakarifki.web.id')
+      ) {
         return origin;
       }
       return allowedOrigins[0] || '*';
     },
     allowMethods: ['GET', 'POST', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization', 'x-web-pin'],
+    allowHeaders: [
+      'Content-Type',
+      'Authorization',
+      'x-web-pin',
+      'Cache-Control',
+      'cache-control',
+      'Pragma',
+      'pragma',
+      'X-Requested-With',
+    ],
     exposeHeaders: ['Content-Length'],
-    maxAge: 600,
+    maxAge: 86400,
     credentials: true,
   });
 
   return corsMiddleware(c, next);
 });
+
+// Explicit OPTIONS preflight handler
+app.options('*', (c) => c.body(null, 204));
 
 // Request logging
 app.use('*', logger());
